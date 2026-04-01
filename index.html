@@ -933,18 +933,23 @@ async function loadWeather() {
     // Wind panel
     const hourly = data.hourly;
     let windHtml = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Hourly wind — Pine Cay</div>';
-    const now = new Date();
-    const ch = now.getHours();
+    const nowTCI = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Grand_Turk'}));
+    const chTCI = nowTCI.getHours();
     for (let i = 0; i < hourly.time.length; i++) {
-      const h = new Date(hourly.time[i]).getHours();
-      if (h < ch && new Date(hourly.time[i]).getDate() === now.getDate()) continue;
-      if (i > ch + 12) break;
+      // API times are already in Grand_Turk timezone (requested via param)
+      const apiHour = parseInt(hourly.time[i].substring(11,13));
+      const apiDay = parseInt(hourly.time[i].substring(8,10));
+      const todayDay = nowTCI.getDate();
+      if (apiDay === todayDay && apiHour < chTCI) continue;
+      if (apiDay > todayDay + 1) break;
+
       const speed = Math.round(hourly.wind_speed_10m[i]);
       const gust = Math.round(hourly.wind_gusts_10m[i]);
       const wdir = dirs[Math.round(hourly.wind_direction_10m[i]/45)%8];
-      const label = h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`;
+      const dayPrefix = apiDay !== todayDay ? 'Tmrw ' : '';
+      const label = apiHour===0?'12am':apiHour<12?`${apiHour}am`:apiHour===12?'12pm':`${apiHour-12}pm`;
       let q = '🟢'; if (speed>20) q='🔴'; else if (speed>15) q='🟡';
-      windHtml += `<div class="tide-row"><span class="tide-label">${label}</span><span style="font-size:13px">${q} ${speed}mph ${wdir} (gusts ${gust})</span></div>`;
+      windHtml += `<div class="tide-row"><span class="tide-label">${dayPrefix}${label}</span><span style="font-size:13px">${q} ${speed}mph ${wdir} (gusts ${gust})</span></div>`;
     }
     document.getElementById('wind-info').innerHTML = windHtml;
   } catch(e) { document.getElementById('wx-temp').textContent = '--°'; }
@@ -977,7 +982,16 @@ async function loadTides() {
         state==='Falling'||state==='Low Tide'?'✅ Outgoing tide — drift from reef balls to beach!':'⏳ Wait for outgoing for reef ball drift'
       }</span></div>`;
 
-    const hi = now.getHours();
+    // Find current hour index in TCI timezone
+    const tideNowTCI = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Grand_Turk'}));
+    let hi = 0;
+    if (data.hourly?.time) {
+      for (let i = 0; i < data.hourly.time.length; i++) {
+        const ah = parseInt(data.hourly.time[i].substring(11,13));
+        const ad = parseInt(data.hourly.time[i].substring(8,10));
+        if (ad === tideNowTCI.getDate() && ah === tideNowTCI.getHours()) { hi = i; break; }
+      }
+    }
     if (data.hourly?.wave_height) {
       html += `<div class="tide-row" style="margin-top:6px;border-top:1px solid var(--glass-border);padding-top:8px"><span class="tide-label">Waves</span><span style="font-size:13px">${data.hourly.wave_height[hi]}m / Swell ${data.hourly.swell_wave_height[hi]}m @ ${data.hourly.swell_wave_period[hi]}s</span></div>`;
     }
@@ -1048,17 +1062,25 @@ async function loadSurf() {
     const res = await fetch('https://marine-api.open-meteo.com/v1/marine?latitude=21.871&longitude=-72.094&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction&timezone=America/Grand_Turk&forecast_days=2');
     const data = await res.json();
     const h = data.hourly;
-    const now = new Date();
-    const currentHour = now.getHours();
+    const nowTCI2 = new Date(new Date().toLocaleString('en-US', {timeZone:'America/Grand_Turk'}));
+    const currentHourTCI = nowTCI2.getHours();
     const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+
+    // Find the index matching current TCI hour
+    let curIdx = 0;
+    for (let i = 0; i < h.time.length; i++) {
+      const apiHour = parseInt(h.time[i].substring(11,13));
+      const apiDay = parseInt(h.time[i].substring(8,10));
+      if (apiDay === nowTCI2.getDate() && apiHour === currentHourTCI) { curIdx = i; break; }
+    }
 
     let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">🏄 Boogie Board & Wave Conditions</div>';
 
     // Current conditions summary
-    const curWave = h.wave_height[currentHour];
-    const curSwell = h.swell_wave_height[currentHour];
-    const curPeriod = h.swell_wave_period[currentHour];
-    const curDir = h.swell_wave_direction[currentHour];
+    const curWave = h.wave_height[curIdx];
+    const curSwell = h.swell_wave_height[curIdx];
+    const curPeriod = h.swell_wave_period[curIdx];
+    const curDir = h.swell_wave_direction[curIdx];
     const curDirStr = dirs[Math.round((curDir||0)/45)%8];
 
     let rating, ratingColor, ratingText, advice;
@@ -1101,11 +1123,12 @@ async function loadSurf() {
     let bestHour = -1, bestScore = -1;
     html += '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;margin-bottom:4px">HOURLY FORECAST</div>';
 
-    for (let i = 0; i < h.time.length && i < 36; i++) {
-      const hr = new Date(h.time[i]);
-      const hh = hr.getHours();
-      const isToday = hr.getDate() === now.getDate();
-      if (isToday && hh < currentHour) continue;
+    for (let i = 0; i < h.time.length && i < 48; i++) {
+      const apiHour = parseInt(h.time[i].substring(11,13));
+      const apiDay = parseInt(h.time[i].substring(8,10));
+      const hh = apiHour;
+      const isToday = apiDay === nowTCI2.getDate();
+      if (isToday && hh < currentHourTCI) continue;
 
       const wv = h.wave_height[i];
       const sp = h.swell_wave_period[i];
@@ -1130,6 +1153,7 @@ async function loadSurf() {
 
       if (score > bestScore && hh >= 6 && hh <= 18) { bestScore = score; bestHour = i; }
 
+      if (!isToday && apiDay > nowTCI2.getDate() + 1) break;
       const dayLabel = isToday ? '' : 'Tmrw ';
       const label = hh===0?'12am':hh<12?`${hh}am`:hh===12?'12pm':`${hh-12}pm`;
 
