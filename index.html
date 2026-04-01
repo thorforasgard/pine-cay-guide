@@ -305,6 +305,7 @@
   <div class="panel-tabs">
     <button class="panel-tab active" onclick="showPanel('navigate')"><span class="tab-icon">🧭</span>Navigate</button>
     <button class="panel-tab" onclick="showPanel('tides')"><span class="tab-icon">🌊</span>Tides</button>
+    <button class="panel-tab" onclick="showPanel('surf')"><span class="tab-icon">🏄</span>Surf</button>
     <button class="panel-tab" onclick="showPanel('glowworm')"><span class="tab-icon">✨</span>Glow</button>
     <button class="panel-tab" onclick="showPanel('wildlife')"><span class="tab-icon">🐢</span>Wildlife</button>
     <button class="panel-tab" onclick="showPanel('wind')"><span class="tab-icon">💨</span>Wind</button>
@@ -318,6 +319,7 @@
       <div class="dest-list" id="dest-list">Loading destinations...</div>
     </div>
     <div class="panel-section" id="panel-tides"><div id="tide-info">Loading tide data...</div></div>
+    <div class="panel-section" id="panel-surf"><div id="surf-info">Loading wave data...</div></div>
     <div class="panel-section" id="panel-glowworm"><div class="glow-card" id="glow-info"><div class="glow-emoji">🪱✨</div><div class="glow-date">Calculating...</div></div></div>
     <div class="panel-section" id="panel-wildlife"><div id="wildlife-list"></div></div>
     <div class="panel-section" id="panel-wind"><div id="wind-info">Loading wind data...</div></div>
@@ -1040,13 +1042,125 @@ function loadWildlife() {
   document.getElementById('wildlife-list').innerHTML = html;
 }
 
+// ============ SURF / BOOGIE BOARD ============
+async function loadSurf() {
+  try {
+    const res = await fetch('https://marine-api.open-meteo.com/v1/marine?latitude=21.871&longitude=-72.094&hourly=wave_height,wave_period,swell_wave_height,swell_wave_period,swell_wave_direction&timezone=America/Grand_Turk&forecast_days=2');
+    const data = await res.json();
+    const h = data.hourly;
+    const now = new Date();
+    const currentHour = now.getHours();
+    const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+
+    let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">🏄 Boogie Board & Wave Conditions</div>';
+
+    // Current conditions summary
+    const curWave = h.wave_height[currentHour];
+    const curSwell = h.swell_wave_height[currentHour];
+    const curPeriod = h.swell_wave_period[currentHour];
+    const curDir = h.swell_wave_direction[currentHour];
+    const curDirStr = dirs[Math.round((curDir||0)/45)%8];
+
+    let rating, ratingColor, ratingText, advice;
+    if (curWave >= 0.5 && curWave <= 1.5 && curPeriod >= 7) {
+      rating = '🟢'; ratingColor = '#4ade80'; ratingText = 'GOOD — Get out there!';
+      advice = 'Great boogie board conditions. Solid waves with good period.';
+    } else if (curWave >= 0.5 && curWave <= 1.5 && curPeriod >= 5) {
+      rating = '🟡'; ratingColor = '#fbbf24'; ratingText = 'FAIR — Rideable chop';
+      advice = 'Waves are there but short period — choppy. Still fun for boogie boarding.';
+    } else if (curWave > 1.5 && curWave <= 2.5) {
+      rating = '🟡'; ratingColor = '#fbbf24'; ratingText = 'CHOPPY — Experienced only';
+      advice = 'Bigger waves. Fun if you know what you\'re doing. Watch for currents.';
+    } else if (curWave > 2.5) {
+      rating = '🔴'; ratingColor = '#f43f5e'; ratingText = 'ROUGH — Stay on beach';
+      advice = 'Too rough for safe boogie boarding. Enjoy the show from shore.';
+    } else if (curWave < 0.3) {
+      rating = '🔴'; ratingColor = '#f43f5e'; ratingText = 'FLAT — No dice';
+      advice = 'Barely any waves. Better day for snorkeling or kayaking.';
+    } else {
+      rating = '🟡'; ratingColor = '#fbbf24'; ratingText = 'SMALL — Catch what you can';
+      advice = 'Small waves but rideable near shore. Good for practice.';
+    }
+
+    html += `
+      <div style="background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(94,234,212,0.08));border:1px solid ${ratingColor}33;border-radius:10px;padding:10px;margin-bottom:8px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${ratingColor}">${rating} ${ratingText}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${advice}</div>
+      </div>
+      <div class="tide-row">
+        <span class="tide-label">Waves</span>
+        <span style="font-size:14px;font-weight:600">${curWave}m (${(curWave*3.28).toFixed(1)}ft)</span>
+      </div>
+      <div class="tide-row">
+        <span class="tide-label">Swell</span>
+        <span style="font-size:13px">${curSwell}m @ ${curPeriod}s from ${curDirStr}</span>
+      </div>
+    `;
+
+    // Hourly forecast - find best window
+    let bestHour = -1, bestScore = -1;
+    html += '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;margin-bottom:4px">HOURLY FORECAST</div>';
+
+    for (let i = 0; i < h.time.length && i < 36; i++) {
+      const hr = new Date(h.time[i]);
+      const hh = hr.getHours();
+      const isToday = hr.getDate() === now.getDate();
+      if (isToday && hh < currentHour) continue;
+
+      const wv = h.wave_height[i];
+      const sp = h.swell_wave_period[i];
+      const sw = h.swell_wave_height[i];
+      const sd = h.swell_wave_direction[i];
+      const sdStr = dirs[Math.round((sd||0)/45)%8];
+
+      // Score for boogie boarding
+      let score = 0;
+      if (wv >= 0.5 && wv <= 1.5) score += 3;
+      else if (wv >= 0.3 && wv < 0.5) score += 1;
+      else if (wv > 1.5 && wv <= 2.0) score += 2;
+      if (sp >= 8) score += 2;
+      else if (sp >= 6) score += 1;
+
+      // Daylight bonus (6am-6pm)
+      if (hh >= 6 && hh <= 18) score += 1;
+
+      let icon = '🔴';
+      if (score >= 5) icon = '🟢';
+      else if (score >= 3) icon = '🟡';
+
+      if (score > bestScore && hh >= 6 && hh <= 18) { bestScore = score; bestHour = i; }
+
+      const dayLabel = isToday ? '' : 'Tmrw ';
+      const label = hh===0?'12am':hh<12?`${hh}am`:hh===12?'12pm':`${hh-12}pm`;
+
+      html += `<div class="tide-row">
+        <span class="tide-label">${dayLabel}${label}</span>
+        <span style="font-size:12px">${icon} ${wv}m @ ${sp}s ${sdStr}</span>
+      </div>`;
+    }
+
+    // Best window callout
+    if (bestHour >= 0 && bestScore >= 3) {
+      const bestTime = new Date(h.time[bestHour]);
+      const bh = bestTime.getHours();
+      const bLabel = bh===0?'12am':bh<12?`${bh}am`:bh===12?'12pm':`${bh-12}pm`;
+      const isToday = bestTime.getDate() === now.getDate();
+      html = html.replace('HOURLY FORECAST', `HOURLY FORECAST — ⭐ Best window: ${isToday?'':' Tmrw '}${bLabel}`);
+    }
+
+    document.getElementById('surf-info').innerHTML = html;
+  } catch(e) {
+    document.getElementById('surf-info').innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px">Wave data unavailable offline.<br>Conditions update when connected.</div>';
+  }
+}
+
 // ============ INIT ============
 async function init() {
   buildLayers();
   calcGlowWorm();
   loadWildlife();
   updateDestList();
-  await Promise.all([loadWeather(), loadTides()]);
+  await Promise.all([loadWeather(), loadTides(), loadSurf()]);
   setTimeout(() => document.getElementById('loading').classList.add('hidden'), 500);
 }
 
