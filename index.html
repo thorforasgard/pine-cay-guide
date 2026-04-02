@@ -494,6 +494,8 @@ const allPOIs = [
   { name: "Sand Dollar Spa", lat: 21.8730, lon: -72.0960, icon: "💆", type: "amenity", desc: "Balinese-inspired treatments" },
   { name: "Main Beach", lat: 21.868, lon: -72.086, icon: "🏖️", type: "pin", desc: "2 miles of pristine white sand" },
   { name: "Fort Apache", lat: 21.8843, lon: -72.0878, icon: "⚡", type: "amenity", desc: "Island infrastructure / power" },
+  { name: "West Flats (Bonefish)", lat: 21.870, lon: -72.104, icon: "🎣", type: "pin", desc: "Wade for bonefish — incoming tide best" },
+  { name: "Fort George Channel", lat: 21.887, lon: -72.088, icon: "🎣", type: "pin", desc: "Deep channel — jacks, barracuda, tarpon at dusk" },
 ];
 
 const namedHouses = [
@@ -1254,9 +1256,17 @@ function calcGlowWorm() {
 // ============ FISHING GUIDE ============
 function loadFishing() {
   const month = new Date().getMonth(); // 0-indexed
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // Current tide state for recommendations
+  const lunarDay = 24.8417;
+  const ref = new Date('2026-01-01T06:00:00Z');
+  const hrs = (new Date() - ref) / 3600000;
+  const phase = (hrs % (lunarDay/2)) / (lunarDay/2);
+  let tideNow = phase < 0.25 ? 'falling' : phase < 0.5 ? 'low' : phase < 0.75 ? 'incoming' : 'high';
 
   const fishData = [
-    // BONEFISHING (Pine Cay specialty)
+    // FLATS
     {
       emoji: '🦴', name: 'Bonefish', category: 'flats',
       where: 'Wadeable flats — west side of island',
@@ -1265,7 +1275,11 @@ function loadFishing() {
       tip: 'Pine Cay is world-class for bones. Wade the flats behind the west shore at incoming tide. They follow the water onto the sand flats to feed.',
       season: 'Year-round, best Mar-Jun',
       peak: [2,3,4,5],
-      tide: 'incoming'
+      tide: 'incoming',
+      avgSize: '4-8 lbs, trophy 12+',
+      fight: 5,
+      eat: 'Catch & release only',
+      pineCayTip: 'West-Side Flats at incoming tide. Look for mudding (clouds of sand) or tailing fish. Polarized glasses essential.'
     },
     {
       emoji: '👑', name: 'Atlantic Tarpon (Silver King)', category: 'flats',
@@ -1275,81 +1289,13 @@ function loadFishing() {
       tip: 'Less common than bones but they\'re here. Look for rolling fish at dawn/dusk in deeper cuts between flats.',
       season: 'Apr-Aug (warm water)',
       peak: [3,4,5,6,7],
-      tide: 'any'
+      tide: 'any',
+      avgSize: '40-100 lbs, up to 150+',
+      fight: 5,
+      eat: 'Catch & release only',
+      pineCayTip: 'Fort George Channel at dusk. Listen for rolling/splashing near mangrove edges.'
     },
-    // REEF FISHING
-    {
-      emoji: '🟥', name: 'Red Snapper', category: 'reef',
-      where: 'Reef edge, 30-80ft depth',
-      method: 'Bottom fishing with cut bait. Medium tackle.',
-      bait: 'Cut squid, pilchard, conch strips. Drop to bottom, wait.',
-      tip: 'Reef is 10 min by boat. Anchor up-current and let bait drift to structure.',
-      season: 'Year-round',
-      peak: null,
-      tide: 'any'
-    },
-    {
-      emoji: '🐟', name: 'Yellowtail Snapper', category: 'reef',
-      where: 'Mid-water over reef, 20-60ft',
-      method: 'Light tackle, free-line or small weight',
-      bait: 'Glass minnows, cut ballyhoo, small jigs. Chum with bread to bring them up.',
-      tip: 'Easiest reef fish to catch. They\'ll come to chum. Great eating — the island favorite.',
-      season: 'Year-round',
-      peak: null,
-      tide: 'any'
-    },
-    {
-      emoji: '🟤', name: 'Nassau Grouper', category: 'reef',
-      where: 'Reef holes and structure, 20-100ft',
-      method: 'Bottom fishing, heavy enough to pull them from holes',
-      bait: 'Live pinfish, cut squid, large jigs',
-      tip: 'Critically endangered — check local regulations. Catch and release recommended. Closed season Dec-Feb in TCI.',
-      season: 'Mar-Nov (closed Dec-Feb)',
-      peak: [2,3,4,5,6,7,8,9,10],
-      tide: 'any'
-    },
-    // DEEP SEA (10 min from shore)
-    {
-      emoji: '⚔️', name: 'Blue Marlin', category: 'deep',
-      where: 'Deep water — 10 min offshore from Pine Cay',
-      method: 'Trolling with outriggers. Heavy tackle (50-80lb).',
-      bait: 'Rigged ballyhoo, large lures (Ilanders, Sea Witches), teasers',
-      tip: 'The drop-off is crazy close to Pine Cay. Blue water starts fast. Best trolling speed 7-9 knots.',
-      season: 'Year-round, best May-Sep',
-      peak: [4,5,6,7,8],
-      tide: 'any'
-    },
-    {
-      emoji: '⛵', name: 'Sailfish', category: 'deep',
-      where: 'Deep water edge, often near current rips',
-      method: 'Trolling or kite fishing. Medium-heavy tackle.',
-      bait: 'Live goggle-eye, ballyhoo, pitch bait on hookless teaser',
-      tip: 'Lighter tackle than marlin. Spectacular jumps. Release always.',
-      season: 'Nov-May',
-      peak: [0,1,2,3,4,10,11],
-      tide: 'any'
-    },
-    {
-      emoji: '🟡', name: 'Mahi-Mahi (Dorado)', category: 'deep',
-      where: 'Offshore — under weed lines and debris',
-      method: 'Trolling or casting to debris. Light-medium tackle.',
-      bait: 'Ballyhoo, feather jigs, small lures. They\'ll eat almost anything.',
-      tip: 'Look for floating sargassum weed lines. Where there\'s weed, there\'s mahi. Keep the first one hooked in the water — the school stays.',
-      season: 'Mar-Jun peak, year-round possible',
-      peak: [2,3,4,5],
-      tide: 'any'
-    },
-    {
-      emoji: '🔵', name: 'Wahoo', category: 'deep',
-      where: 'Deep reef edges, 100-300ft drop-offs',
-      method: 'High-speed trolling (12-15 knots). Wire leader required — razor teeth.',
-      bait: 'Rapala-style diving plugs, high-speed lures, rigged bonito strips',
-      tip: 'Fastest fish you\'ll hook — 60mph runs. Best in cooler months when they come shallower.',
-      season: 'Nov-Apr peak',
-      peak: [0,1,2,3,10,11],
-      tide: 'any'
-    },
-    // SHORE / EASY
+    // SHORE & DOCK
     {
       emoji: '🪨', name: 'Barracuda', category: 'shore',
       where: 'Everywhere — reef, flats, shore, docks',
@@ -1358,7 +1304,11 @@ function loadFishing() {
       tip: 'Great fight, always around. Don\'t eat them (ciguatera risk in large ones). Fun catch-and-release from shore or dock.',
       season: 'Year-round',
       peak: null,
-      tide: 'any'
+      tide: 'any',
+      avgSize: '5-15 lbs, up to 40+',
+      fight: 4,
+      eat: 'Ciguatera risk — don\'t eat large ones',
+      pineCayTip: 'Member\'s Dock at dawn/dusk. Fast retrieve with silver spoons. Wire leader a must — razor teeth.'
     },
     {
       emoji: '🏖️', name: 'Jacks (Bar Jack, Horse-eye)', category: 'shore',
@@ -1368,16 +1318,211 @@ function loadFishing() {
       tip: 'Scrappy fighters on light tackle. Bar jacks are everywhere around the reef balls and docks. Great for kids or casual fishing.',
       season: 'Year-round',
       peak: null,
-      tide: 'any'
+      tide: 'any',
+      avgSize: '2-6 lbs',
+      fight: 3,
+      eat: 'Good table fish',
+      pineCayTip: 'Reef Balls area and Member\'s Dock. School fish — where there\'s one, there\'s fifty. Topwater poppers at dawn.'
+    },
+    // REEF
+    {
+      emoji: '🟥', name: 'Red Snapper', category: 'reef',
+      where: 'Reef edge, 30-80ft depth',
+      method: 'Bottom fishing with cut bait. Medium tackle.',
+      bait: 'Cut squid, pilchard, conch strips. Drop to bottom, wait.',
+      tip: 'Reef is 10 min by boat. Anchor up-current and let bait drift to structure.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any',
+      avgSize: '3-8 lbs, up to 15+',
+      fight: 3,
+      eat: 'Excellent table fish',
+      pineCayTip: 'Charter boat to reef edge. Strong current means fresh bait delivery to fish. Fight hard for their size.'
+    },
+    {
+      emoji: '🐟', name: 'Yellowtail Snapper', category: 'reef',
+      where: 'Mid-water over reef, 20-60ft',
+      method: 'Light tackle, free-line or small weight',
+      bait: 'Glass minnows, cut ballyhoo, small jigs. Chum with bread to bring them up.',
+      tip: 'Easiest reef fish to catch. They\'ll come to chum. Great eating — the island favorite.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any',
+      avgSize: '1-3 lbs, up to 5',
+      fight: 2,
+      eat: 'Excellent table fish — island favorite',
+      pineCayTip: 'Most common catch on reef charters. Chum with bread scraps from resort kitchen. Light tackle for best fight.'
+    },
+    {
+      emoji: '🟤', name: 'Nassau Grouper', category: 'reef',
+      where: 'Reef holes and structure, 20-100ft',
+      method: 'Bottom fishing, heavy enough to pull them from holes',
+      bait: 'Live pinfish, cut squid, large jigs',
+      tip: 'Critically endangered — check local regulations. Catch and release recommended. Closed season Dec-Feb in TCI.',
+      season: 'Mar-Nov (closed Dec-Feb)',
+      peak: [2,3,4,5,6,7,8,9,10],
+      tide: 'any',
+      avgSize: '5-15 lbs, up to 30+',
+      fight: 4,
+      eat: 'PROTECTED Dec-Feb. C&R recommended year-round.',
+      pineCayTip: 'Critically endangered. If you catch one, quick photo and release. Heavy tackle to keep them from holes.'
+    },
+    // DEEP SEA
+    {
+      emoji: '⚔️', name: 'Blue Marlin', category: 'deep',
+      where: 'Deep water — 10 min offshore from Pine Cay',
+      method: 'Trolling with outriggers. Heavy tackle (50-80lb).',
+      bait: 'Rigged ballyhoo, large lures (Ilanders, Sea Witches), teasers',
+      tip: 'The drop-off is crazy close to Pine Cay. Blue water starts fast. Best trolling speed 7-9 knots.',
+      season: 'Year-round, best May-Sep',
+      peak: [4,5,6,7,8],
+      tide: 'any',
+      avgSize: '200-400 lbs, up to 1000+',
+      fight: 5,
+      eat: 'Catch & release only',
+      pineCayTip: 'The wall drops to 7000ft just offshore. Charter boats reach blue water in 10 minutes. Always release.'
+    },
+    {
+      emoji: '⛵', name: 'Sailfish', category: 'deep',
+      where: 'Deep water edge, often near current rips',
+      method: 'Trolling or kite fishing. Medium-heavy tackle.',
+      bait: 'Live goggle-eye, ballyhoo, pitch bait on hookless teaser',
+      tip: 'Lighter tackle than marlin. Spectacular jumps. Release always.',
+      season: 'Nov-May',
+      peak: [0,1,2,3,4,10,11],
+      tide: 'any',
+      avgSize: '40-80 lbs, up to 120',
+      fight: 5,
+      eat: 'Catch & release only',
+      pineCayTip: 'Cooler months bring them in. Multiple jumps — incredible aerial show. Always release billfish.'
+    },
+    {
+      emoji: '🟡', name: 'Mahi-Mahi (Dorado)', category: 'deep',
+      where: 'Offshore — under weed lines and debris',
+      method: 'Trolling or casting to debris. Light-medium tackle.',
+      bait: 'Ballyhoo, feather jigs, small lures. They\'ll eat almost anything.',
+      tip: 'Look for floating sargassum weed lines. Where there\'s weed, there\'s mahi. Keep the first one hooked in the water — the school stays.',
+      season: 'Mar-Jun peak, year-round possible',
+      peak: [2,3,4,5],
+      tide: 'any',
+      avgSize: '10-25 lbs, up to 50+',
+      fight: 4,
+      eat: 'Excellent table fish',
+      pineCayTip: 'Scan for floating weed lines. Keep first fish in water while you cast to the school. Bulls have square heads.'
+    },
+    {
+      emoji: '🔵', name: 'Wahoo', category: 'deep',
+      where: 'Deep reef edges, 100-300ft drop-offs',
+      method: 'High-speed trolling (12-15 knots). Wire leader required — razor teeth.',
+      bait: 'Rapala-style diving plugs, high-speed lures, rigged bonito strips',
+      tip: 'Fastest fish you\'ll hook — 60mph runs. Best in cooler months when they come shallower.',
+      season: 'Nov-Apr peak',
+      peak: [0,1,2,3,10,11],
+      tide: 'any',
+      avgSize: '20-60 lbs, up to 100+',
+      fight: 5,
+      eat: 'Excellent table fish',
+      pineCayTip: 'High-speed trolling over the wall. Blistering runs will melt your reel. Wire leader essential.'
     },
   ];
 
-  // Current tide state for recommendations
-  const lunarDay = 24.8417;
-  const ref = new Date('2026-01-01T06:00:00Z');
-  const hrs = (new Date() - ref) / 3600000;
-  const phase = (hrs % (lunarDay/2)) / (lunarDay/2);
-  let tideNow = phase < 0.25 ? 'falling' : phase < 0.5 ? 'low' : phase < 0.75 ? 'incoming' : 'high';
+  let html = '';
+
+  // SECTION 1: BEFORE YOU CAST (Legal Warning)
+  html += `
+    <div style="background:linear-gradient(135deg,rgba(244,63,94,0.15),rgba(234,88,12,0.1));border:1px solid rgba(244,63,94,0.3);border-radius:12px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:#fb7185;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">⚠️ Before You Cast</div>
+      <div style="font-size:12px;line-height:1.6;color:var(--text)">
+        <div style="margin-bottom:6px"><strong style="color:var(--coral)">Fishing license required</strong> — All visitors 16+. $10/day or $30/month. Get at Turtle Cove Marina (<a href="tel:+16499413781" style="color:var(--ocean-light)">+1 649-941-3781</a>) or Walkin Marine (<a href="tel:+16499464411" style="color:var(--ocean-light)">+1 649-946-4411</a>) on Provo BEFORE coming to Pine Cay. Everyone on a fishing boat needs one, even non-fishers. <strong style="color:var(--coral)">$50,000 fine</strong> without one.</div>
+        <div style="margin-bottom:6px"><strong>Protected species:</strong> Nassau Grouper CLOSED Dec-Feb (critically endangered, C&R recommended even in open season). Spiny Lobster season Aug 1 - Mar 31 only. Billfish (marlin, sailfish) = always catch & release.</div>
+        <div style="margin-bottom:6px"><strong>No fishing in National Parks</strong> — Princess Alexandra NP and other protected areas. Huge fines + imprisonment.</div>
+        <div style="margin-bottom:6px"><strong>No taking shells or coral</strong> — ever, anywhere.</div>
+        <div><strong>Ciguatera warning:</strong> Don't eat large barracuda or reef predators over 5lbs. Risk of ciguatera poisoning.</div>
+      </div>
+    </div>
+  `;
+
+  // SECTION 2: WHAT YOU CAN DO FROM PINE CAY
+  html += `<div style="font-size:13px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px">🎣 What You Can Do From Pine Cay</div>`;
+
+  html += `
+    <details open style="margin-bottom:10px;background:rgba(94,234,212,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:10px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--sea-foam);min-height:44px;display:flex;align-items:center">🏖️ DIY (No Boat Needed)</summary>
+      <div style="padding:8px 0 0 0;font-size:12px;line-height:1.6;color:var(--text)">
+        <div style="margin-bottom:4px">• Shore casting from Member's Dock, beaches, and rocky points</div>
+        <div style="margin-bottom:4px">• Wade the west-side flats for bonefish at incoming tide</div>
+        <div style="margin-bottom:4px">• Kayak fishing (resort provides kayaks free)</div>
+        <div style="margin-bottom:4px">• <strong>YOU provide:</strong> rod, tackle, license. Resort may have limited gear — ask concierge.</div>
+        <div style="color:var(--text-muted)"><strong>Target:</strong> Bonefish, barracuda, jacks, small snappers</div>
+      </div>
+    </details>
+
+    <details style="margin-bottom:10px;background:rgba(94,234,212,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:10px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--sea-foam);min-height:44px;display:flex;align-items:center">🚤 Charter Fishing (Book via Resort)</summary>
+      <div style="padding:8px 0 0 0;font-size:12px;line-height:1.6;color:var(--text)">
+        <div style="margin-bottom:4px">• Resort concierge arranges through Provo-based companies</div>
+        <div style="margin-bottom:4px">• All gear, license, drinks, lunch included</div>
+        <div style="margin-bottom:4px">• <strong>Companies:</strong> Catchin' Caicos (<a href="tel:+16492442927" style="color:var(--ocean-light)">+1 649-244-2927</a>), others via concierge</div>
+        <div style="margin-bottom:4px">• <strong>Pricing:</strong> Half-day ~$1,600 | Full day ~$4,500 (+ 12% gov tax)</div>
+        <div style="margin-bottom:4px">• <strong>Book ahead:</strong> 4-7 days. Bonefishing guides book up fast.</div>
+        <div style="color:var(--text-muted)"><strong>Target:</strong> Everything — reef fish, deep sea, guided bonefishing</div>
+      </div>
+    </details>
+
+    <details style="margin-bottom:10px;background:rgba(94,234,212,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:10px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--sea-foam);min-height:44px;display:flex;align-items:center">🎒 Pack List (What to Bring)</summary>
+      <div style="padding:8px 0 0 0;font-size:12px;line-height:1.6;color:var(--text)">
+        <div style="margin-bottom:4px">• <strong style="color:var(--coral)">Polarized sunglasses</strong> (ESSENTIAL for sight-casting on flats)</div>
+        <div style="margin-bottom:4px">• SPF 50+ sunscreen, hat, buff/neck gaiter, long-sleeve sun shirt</div>
+        <div style="margin-bottom:4px">• Water (dehydration sneaks up fast)</div>
+        <div style="margin-bottom:4px">• Light spinning rod + small tackle box if you want DIY flexibility</div>
+        <div>• 7-9 weight fly rod if you're a fly fisher (bonefish territory)</div>
+      </div>
+    </details>
+  `;
+
+  // SECTION 3: GEAR GUIDE
+  html += `<div style="font-size:13px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px">🛠️ Gear Guide (DIY Anglers)</div>`;
+
+  html += `
+    <details style="margin-bottom:8px;border-bottom:1px solid var(--glass-border);padding-bottom:6px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;min-height:44px;display:flex;align-items:center">🎣 Bonefishing Setup (Fly)</summary>
+      <div style="padding:6px 0 2px 0;font-size:12px;line-height:1.5">
+        <div><strong>Rod:</strong> 7-9 weight fly rod, 9ft</div>
+        <div><strong>Reel:</strong> Large arbor with good drag (bonefish run HARD)</div>
+        <div><strong>Line:</strong> Weight-forward floating, tropical taper</div>
+        <div><strong>Leader:</strong> 9-12ft, 10-12lb fluorocarbon tippet</div>
+        <div><strong>Flies:</strong> Gotcha (tan/pink), Crazy Charlie, Mantis Shrimp, Christmas Island Special</div>
+        <div style="color:var(--sea-foam);margin-top:4px"><strong>Technique:</strong> Sight-cast to tailing/mudding fish on flats. Strip-strip-pause retrieve.</div>
+      </div>
+    </details>
+
+    <details style="margin-bottom:8px;border-bottom:1px solid var(--glass-border);padding-bottom:6px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;min-height:44px;display:flex;align-items:center">🎣 Bonefishing Setup (Spinning)</summary>
+      <div style="padding:6px 0 2px 0;font-size:12px;line-height:1.5">
+        <div><strong>Rod:</strong> 7ft medium-light spinning rod</div>
+        <div><strong>Reel:</strong> 2500-3000 size spinning reel</div>
+        <div><strong>Line:</strong> 8-10lb braided, 12lb fluoro leader</div>
+        <div><strong>Lures:</strong> DOA Shrimp (rootbeer or gold), small jigs 1/8-1/4oz, live shrimp if available</div>
+        <div style="color:var(--sea-foam);margin-top:4px"><strong>Technique:</strong> Cast ahead of moving fish. Slow retrieve along bottom.</div>
+      </div>
+    </details>
+
+    <details style="margin-bottom:8px;border-bottom:1px solid var(--glass-border);padding-bottom:6px">
+      <summary style="cursor:pointer;font-size:13px;font-weight:600;min-height:44px;display:flex;align-items:center">🎣 Shore/Dock Setup</summary>
+      <div style="padding:6px 0 2px 0;font-size:12px;line-height:1.5">
+        <div><strong>Rod:</strong> 7ft medium spinning rod</div>
+        <div><strong>Reel:</strong> 3000-4000 size</div>
+        <div><strong>Line:</strong> 15-20lb braided, 30lb fluoro leader (barracuda have teeth — consider wire)</div>
+        <div><strong>Lures:</strong> Silver spoons (Kastmaster), Rapala X-Rap, topwater poppers, small jigs</div>
+        <div><strong>Bait:</strong> Cut squid, pilchard, bread for chumming. Ask resort kitchen for scraps.</div>
+        <div style="color:var(--sea-foam);margin-top:4px"><strong>Technique:</strong> Cast from Member's Dock or rocky shore. Work lures fast for barracuda, slow for snappers.</div>
+      </div>
+    </details>
+  `;
+
+  // SECTION 4: SPECIES GUIDE (Enhanced with new fields)
+  html += `<div style="font-size:13px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px">🐟 Species Guide</div>`;
 
   const categories = [
     { key: 'flats', label: '🏝️ FLATS (walk from shore)', desc: 'Pine Cay\'s specialty — world-class bonefishing' },
@@ -1385,8 +1530,6 @@ function loadFishing() {
     { key: 'reef', label: '🪸 REEF (boat, 5-10 min)', desc: 'Bottom fishing over the barrier reef' },
     { key: 'deep', label: '🌊 DEEP SEA (boat, 10-15 min)', desc: 'Trolling in blue water — marlin, mahi, wahoo' },
   ];
-
-  let html = '';
 
   for (const cat of categories) {
     const fish = fishData.filter(f => f.category === cat.key);
@@ -1398,24 +1541,69 @@ function loadFishing() {
       const peakBadge = isPeak ? '<span style="font-size:9px;background:rgba(34,197,94,0.2);color:#4ade80;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:6px">PEAK</span>' : '';
       const tideMatch = f.tide === 'incoming' && tideNow === 'incoming';
       const tideBadge = tideMatch ? '<span style="font-size:9px;background:rgba(14,165,233,0.2);color:#38bdf8;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">TIDE ✓</span>' : '';
+      
+      const fightStars = '💪'.repeat(f.fight);
 
       html += `
         <details style="margin-bottom:6px;border-bottom:1px solid var(--glass-border);padding-bottom:6px">
-          <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">
+          <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;min-height:44px">
             <span style="font-size:18px">${f.emoji}</span>
             ${f.name}${peakBadge}${tideBadge}
           </summary>
           <div style="padding:6px 0 2px 28px;font-size:12px;line-height:1.5">
+            <div style="margin-bottom:4px"><strong>Size:</strong> ${f.avgSize} | <strong>Fight:</strong> ${fightStars}</div>
+            <div style="margin-bottom:4px">🍽️ <strong>${f.eat}</strong></div>
             <div><span style="color:var(--text-muted)">📍 Where:</span> ${f.where}</div>
             <div><span style="color:var(--text-muted)">🎯 Method:</span> ${f.method}</div>
             <div><span style="color:var(--text-muted)">🪱 Bait:</span> ${f.bait}</div>
-            <div style="color:var(--sea-foam);margin-top:4px">💡 ${f.tip}</div>
-            <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Season: ${f.season}${f.tide !== 'any' ? ' | Best tide: ' + f.tide : ''}</div>
+            <div style="color:var(--sea-foam);margin-top:4px;background:rgba(94,234,212,0.08);padding:6px;border-radius:6px;border-left:3px solid var(--sea-foam)">
+              <strong>Pine Cay Tip:</strong> ${f.pineCayTip}
+            </div>
+            <div style="color:var(--text-muted);font-size:11px;margin-top:4px">Season: ${f.season}${f.tide !== 'any' ? ' | Best tide: ' + f.tide : ''}</div>
           </div>
         </details>
       `;
     }
   }
+
+  // SECTION 5: PINE CAY FISHING SPOTS
+  html += `<div style="font-size:13px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px">📍 Pine Cay Fishing Spots</div>`;
+
+  const spots = [
+    { name: 'West-Side Flats', desc: 'Wade for bonefish at incoming tide. Follow water as it pushes onto sand. Best: 2hrs before to 1hr after high tide.' },
+    { name: "Member's Dock", desc: 'Cast jigs and poppers for jacks and barracuda. Dawn and dusk are prime. Chum with bread scraps for snappers.' },
+    { name: 'Reef Balls Area', desc: '(21.885, -72.096) — Snorkel-fishing for reef species. Baby nurse sharks here — harmless, great photo ops.' },
+    { name: 'Channel to Fort George Cay', desc: 'Deeper water between cays. Jacks, barracuda, possibly tarpon at dusk. Kayak recommended.' },
+    { name: 'Main Beach North Shore', desc: 'Long casting from beach at dawn. Target surf zone for jacks. Walk east for less-fished water.' },
+    { name: 'Stillwater Lake Area', desc: 'Interior flats near the lake. Occasional bonefish and barracuda in connected channels.' },
+  ];
+
+  for (const spot of spots) {
+    html += `
+      <div style="margin-bottom:8px;padding:8px;background:rgba(94,234,212,0.05);border-left:3px solid var(--ocean-light);border-radius:4px">
+        <div style="font-size:13px;font-weight:600;color:var(--sea-foam);margin-bottom:2px">${spot.name}</div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5">${spot.desc}</div>
+      </div>
+    `;
+  }
+
+  // SECTION 6: CURRENT MONTH CONDITIONS
+  html += `<div style="font-size:13px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px">📅 ${monthNames[month]} Conditions</div>`;
+
+  const peakThisMonth = fishData.filter(f => f.peak && f.peak.includes(month));
+  const peakNames = peakThisMonth.map(f => f.name).join(', ');
+
+  html += `
+    <div style="background:linear-gradient(135deg,rgba(14,165,233,0.15),rgba(94,234,212,0.1));border:1px solid rgba(94,234,212,0.2);border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-size:12px;line-height:1.6;color:var(--text)">
+        ${peakThisMonth.length > 0 
+          ? `<div><strong style="color:var(--sea-foam)">Peak season for:</strong> ${peakNames}</div>` 
+          : '<div style="color:var(--text-muted)">No specific peak species this month — year-round fishing remains excellent.</div>'
+        }
+        <div style="margin-top:6px;color:var(--text-muted);font-size:11px">Current tide: <strong style="color:var(--ocean-light)">${tideNow}</strong>${tideNow === 'incoming' ? ' — Go now for bonefish!' : ''}</div>
+      </div>
+    </div>
+  `;
 
   document.getElementById('fish-info').innerHTML = html;
 }
