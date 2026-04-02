@@ -307,7 +307,8 @@
     <button class="panel-tab" onclick="showPanel('tides')"><span class="tab-icon">🌊</span>Tides</button>
     <button class="panel-tab" onclick="showPanel('surf')"><span class="tab-icon">🏄</span>Surf</button>
     <button class="panel-tab" onclick="showPanel('glowworm')"><span class="tab-icon">✨</span>Glow</button>
-    <button class="panel-tab" onclick="showPanel('wildlife')"><span class="tab-icon">🐢</span>Wildlife</button>
+    <button class="panel-tab" onclick="showPanel('fish')"><span class="tab-icon">🎣</span>Fish</button>
+    <button class="panel-tab" onclick="showPanel('wildlife')"><span class="tab-icon">🐢</span>Life</button>
     <button class="panel-tab" onclick="showPanel('wind')"><span class="tab-icon">💨</span>Wind</button>
   </div>
   <div class="panel-content">
@@ -321,6 +322,7 @@
     <div class="panel-section" id="panel-tides"><div id="tide-info">Loading tide data...</div></div>
     <div class="panel-section" id="panel-surf"><div id="surf-info">Loading wave data...</div></div>
     <div class="panel-section" id="panel-glowworm"><div class="glow-card" id="glow-info"><div class="glow-emoji">🪱✨</div><div class="glow-date">Calculating...</div></div></div>
+    <div class="panel-section" id="panel-fish"><div id="fish-info"></div></div>
     <div class="panel-section" id="panel-wildlife"><div id="wildlife-list"></div></div>
     <div class="panel-section" id="panel-wind"><div id="wind-info">Loading wind data...</div></div>
   </div>
@@ -1032,6 +1034,175 @@ function calcGlowWorm() {
     <div class="glow-detail" style="margin-top:6px;font-style:italic">Visible by boat, minutes from shore. Champagne provided. 🥂</div>`;
 }
 
+// ============ FISHING GUIDE ============
+function loadFishing() {
+  const month = new Date().getMonth(); // 0-indexed
+
+  const fishData = [
+    // BONEFISHING (Pine Cay specialty)
+    {
+      emoji: '🦴', name: 'Bonefish', category: 'flats',
+      where: 'Wadeable flats — west side of island',
+      method: 'Fly fishing or light spinning. Sight-cast on flats.',
+      bait: 'Gotcha flies, Crazy Charlie, shrimp patterns. Live shrimp if spinning.',
+      tip: 'Pine Cay is world-class for bones. Wade the flats behind the west shore at incoming tide. They follow the water onto the sand flats to feed.',
+      season: 'Year-round, best Mar-Jun',
+      peak: [2,3,4,5],
+      tide: 'incoming'
+    },
+    {
+      emoji: '👑', name: 'Atlantic Tarpon (Silver King)', category: 'flats',
+      where: 'Deeper channels near flats, creek mouths',
+      method: 'Heavy fly rod (10-12wt) or medium spinning. Fight lasts 30+ min.',
+      bait: 'Large streamers, Tarpon Toad flies, live mullet or crab',
+      tip: 'Less common than bones but they\'re here. Look for rolling fish at dawn/dusk in deeper cuts between flats.',
+      season: 'Apr-Aug (warm water)',
+      peak: [3,4,5,6,7],
+      tide: 'any'
+    },
+    // REEF FISHING
+    {
+      emoji: '🟥', name: 'Red Snapper', category: 'reef',
+      where: 'Reef edge, 30-80ft depth',
+      method: 'Bottom fishing with cut bait. Medium tackle.',
+      bait: 'Cut squid, pilchard, conch strips. Drop to bottom, wait.',
+      tip: 'Reef is 10 min by boat. Anchor up-current and let bait drift to structure.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any'
+    },
+    {
+      emoji: '🐟', name: 'Yellowtail Snapper', category: 'reef',
+      where: 'Mid-water over reef, 20-60ft',
+      method: 'Light tackle, free-line or small weight',
+      bait: 'Glass minnows, cut ballyhoo, small jigs. Chum with bread to bring them up.',
+      tip: 'Easiest reef fish to catch. They\'ll come to chum. Great eating — the island favorite.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any'
+    },
+    {
+      emoji: '🟤', name: 'Nassau Grouper', category: 'reef',
+      where: 'Reef holes and structure, 20-100ft',
+      method: 'Bottom fishing, heavy enough to pull them from holes',
+      bait: 'Live pinfish, cut squid, large jigs',
+      tip: 'Critically endangered — check local regulations. Catch and release recommended. Closed season Dec-Feb in TCI.',
+      season: 'Mar-Nov (closed Dec-Feb)',
+      peak: [2,3,4,5,6,7,8,9,10],
+      tide: 'any'
+    },
+    // DEEP SEA (10 min from shore)
+    {
+      emoji: '⚔️', name: 'Blue Marlin', category: 'deep',
+      where: 'Deep water — 10 min offshore from Pine Cay',
+      method: 'Trolling with outriggers. Heavy tackle (50-80lb).',
+      bait: 'Rigged ballyhoo, large lures (Ilanders, Sea Witches), teasers',
+      tip: 'The drop-off is crazy close to Pine Cay. Blue water starts fast. Best trolling speed 7-9 knots.',
+      season: 'Year-round, best May-Sep',
+      peak: [4,5,6,7,8],
+      tide: 'any'
+    },
+    {
+      emoji: '⛵', name: 'Sailfish', category: 'deep',
+      where: 'Deep water edge, often near current rips',
+      method: 'Trolling or kite fishing. Medium-heavy tackle.',
+      bait: 'Live goggle-eye, ballyhoo, pitch bait on hookless teaser',
+      tip: 'Lighter tackle than marlin. Spectacular jumps. Release always.',
+      season: 'Nov-May',
+      peak: [0,1,2,3,4,10,11],
+      tide: 'any'
+    },
+    {
+      emoji: '🟡', name: 'Mahi-Mahi (Dorado)', category: 'deep',
+      where: 'Offshore — under weed lines and debris',
+      method: 'Trolling or casting to debris. Light-medium tackle.',
+      bait: 'Ballyhoo, feather jigs, small lures. They\'ll eat almost anything.',
+      tip: 'Look for floating sargassum weed lines. Where there\'s weed, there\'s mahi. Keep the first one hooked in the water — the school stays.',
+      season: 'Mar-Jun peak, year-round possible',
+      peak: [2,3,4,5],
+      tide: 'any'
+    },
+    {
+      emoji: '🔵', name: 'Wahoo', category: 'deep',
+      where: 'Deep reef edges, 100-300ft drop-offs',
+      method: 'High-speed trolling (12-15 knots). Wire leader required — razor teeth.',
+      bait: 'Rapala-style diving plugs, high-speed lures, rigged bonito strips',
+      tip: 'Fastest fish you\'ll hook — 60mph runs. Best in cooler months when they come shallower.',
+      season: 'Nov-Apr peak',
+      peak: [0,1,2,3,10,11],
+      tide: 'any'
+    },
+    // SHORE / EASY
+    {
+      emoji: '🪨', name: 'Barracuda', category: 'shore',
+      where: 'Everywhere — reef, flats, shore, docks',
+      method: 'Casting shiny lures, trolling. Wire leader.',
+      bait: 'Silver spoons, Rapalas, tube lures. They chase shine and speed.',
+      tip: 'Great fight, always around. Don\'t eat them (ciguatera risk in large ones). Fun catch-and-release from shore or dock.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any'
+    },
+    {
+      emoji: '🏖️', name: 'Jacks (Bar Jack, Horse-eye)', category: 'shore',
+      where: 'Shore, reef edges, docks',
+      method: 'Light spinning, small poppers and jigs',
+      bait: 'Small silver jigs, topwater poppers, live pilchards',
+      tip: 'Scrappy fighters on light tackle. Bar jacks are everywhere around the reef balls and docks. Great for kids or casual fishing.',
+      season: 'Year-round',
+      peak: null,
+      tide: 'any'
+    },
+  ];
+
+  // Current tide state for recommendations
+  const lunarDay = 24.8417;
+  const ref = new Date('2026-01-01T06:00:00Z');
+  const hrs = (new Date() - ref) / 3600000;
+  const phase = (hrs % (lunarDay/2)) / (lunarDay/2);
+  let tideNow = phase < 0.25 ? 'falling' : phase < 0.5 ? 'low' : phase < 0.75 ? 'incoming' : 'high';
+
+  const categories = [
+    { key: 'flats', label: '🏝️ FLATS (walk from shore)', desc: 'Pine Cay\'s specialty — world-class bonefishing' },
+    { key: 'shore', label: '🪨 SHORE & DOCK', desc: 'No boat needed — cast from beach or Member\'s Dock' },
+    { key: 'reef', label: '🪸 REEF (boat, 5-10 min)', desc: 'Bottom fishing over the barrier reef' },
+    { key: 'deep', label: '🌊 DEEP SEA (boat, 10-15 min)', desc: 'Trolling in blue water — marlin, mahi, wahoo' },
+  ];
+
+  let html = '';
+
+  for (const cat of categories) {
+    const fish = fishData.filter(f => f.category === cat.key);
+    html += `<div style="font-size:11px;color:var(--sea-foam);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-top:10px;margin-bottom:4px">${cat.label}</div>`;
+    html += `<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${cat.desc}</div>`;
+
+    for (const f of fish) {
+      const isPeak = f.peak && f.peak.includes(month);
+      const peakBadge = isPeak ? '<span style="font-size:9px;background:rgba(34,197,94,0.2);color:#4ade80;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:6px">PEAK</span>' : '';
+      const tideMatch = f.tide === 'incoming' && tideNow === 'incoming';
+      const tideBadge = tideMatch ? '<span style="font-size:9px;background:rgba(14,165,233,0.2);color:#38bdf8;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">TIDE ✓</span>' : '';
+
+      html += `
+        <details style="margin-bottom:6px;border-bottom:1px solid var(--glass-border);padding-bottom:6px">
+          <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600">
+            <span style="font-size:18px">${f.emoji}</span>
+            ${f.name}${peakBadge}${tideBadge}
+          </summary>
+          <div style="padding:6px 0 2px 28px;font-size:12px;line-height:1.5">
+            <div><span style="color:var(--text-muted)">📍 Where:</span> ${f.where}</div>
+            <div><span style="color:var(--text-muted)">🎯 Method:</span> ${f.method}</div>
+            <div><span style="color:var(--text-muted)">🪱 Bait:</span> ${f.bait}</div>
+            <div style="color:var(--sea-foam);margin-top:4px">💡 ${f.tip}</div>
+            <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Season: ${f.season}${f.tide !== 'any' ? ' | Best tide: ' + f.tide : ''}</div>
+          </div>
+        </details>
+      `;
+    }
+  }
+
+  document.getElementById('fish-info').innerHTML = html;
+}
+
 // ============ WILDLIFE ============
 function loadWildlife() {
   const month = new Date().getMonth();
@@ -1183,6 +1354,7 @@ async function init() {
   buildLayers();
   calcGlowWorm();
   loadWildlife();
+  loadFishing();
   updateDestList();
   await Promise.all([loadWeather(), loadTides(), loadSurf()]);
   setTimeout(() => document.getElementById('loading').classList.add('hidden'), 500);
