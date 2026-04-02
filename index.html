@@ -91,27 +91,87 @@
     font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
   }
 
-  /* Bottom panel */
+  /* Bottom panel - expandable with 3 states */
   .bottom-panel {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
     background: var(--glass);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--glass-border);
     padding: 0 0 env(safe-area-inset-bottom, 8px);
-    transition: transform 0.3s ease;
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 40vh; /* Default: half state */
+    display: flex; flex-direction: column;
   }
-  .bottom-panel.nav-mode { transform: translateY(calc(100% - 52px)); }
+  .bottom-panel.collapsed { height: 64px; }
+  .bottom-panel.full { height: 85vh; }
+  .bottom-panel.nav-mode { height: 60px; }
 
-  .panel-tabs { display: flex; border-bottom: 1px solid var(--glass-border); }
-  .panel-tab {
-    flex: 1; padding: 10px 4px; text-align: center; font-size: 10px; font-weight: 500;
+  /* Drag handle for expansion */
+  .panel-handle {
+    width: 100%; padding: 10px 0; display: flex; align-items: center; justify-content: center;
+    cursor: grab; user-select: none; -webkit-user-select: none;
+    touch-action: none; /* Prevent default touch behaviors */
+  }
+  .panel-handle:active { cursor: grabbing; }
+  .panel-handle:active .handle-bar { opacity: 0.8; }
+  .handle-bar {
+    width: 40px; height: 5px; border-radius: 3px;
+    background: var(--text-muted); opacity: 0.5;
+    transition: opacity 0.2s;
+  }
+
+  /* Category tabs (Map, Conditions, Guide) */
+  .category-tabs { 
+    display: flex; border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+  }
+  .category-tab {
+    flex: 1; padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600;
+    color: var(--text-muted); border: none; background: none; cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.2s;
+    min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .category-tab:active { transform: scale(0.95); }
+  .category-tab.active { 
+    color: var(--sea-foam); 
+    border-bottom: 3px solid var(--sea-foam);
+    background: rgba(94, 234, 212, 0.05);
+  }
+  .category-tab .cat-icon { font-size: 20px; }
+
+  /* Sub-tabs within categories */
+  .sub-tabs {
+    display: none; /* Hidden by default */
+    overflow-x: auto; overflow-y: hidden;
+    white-space: nowrap; border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sub-tabs::-webkit-scrollbar { display: none; }
+  .sub-tabs.active { display: flex; }
+  .sub-tab {
+    padding: 10px 16px; text-align: center; font-size: 11px; font-weight: 500;
     color: var(--text-muted); border: none; background: none; cursor: pointer;
     text-transform: uppercase; letter-spacing: 0.03em; transition: all 0.2s;
+    white-space: nowrap; min-height: 44px;
+    display: inline-flex; align-items: center; gap: 6px;
+    -webkit-tap-highlight-color: transparent;
   }
-  .panel-tab.active { color: var(--sea-foam); border-bottom: 2px solid var(--sea-foam); }
-  .panel-tab .tab-icon { display: block; font-size: 18px; margin-bottom: 2px; }
+  .sub-tab:active { opacity: 0.6; }
+  .sub-tab.active { 
+    color: var(--sea-foam); 
+    border-bottom: 2px solid var(--sea-foam);
+  }
+  .sub-tab .sub-icon { font-size: 16px; }
 
-  .panel-content { padding: 12px 16px; max-height: 180px; overflow-y: auto; }
+  .panel-content { 
+    padding: 12px 16px; 
+    overflow-y: auto; 
+    flex: 1; /* Take remaining space */
+    -webkit-overflow-scrolling: touch;
+  }
   .panel-section { display: none; }
   .panel-section.active { display: block; }
 
@@ -186,17 +246,24 @@
   }
   .layer-btn.active { color: var(--sea-foam); border-color: rgba(94, 234, 212, 0.4); background: rgba(94, 234, 212, 0.1); }
 
-  /* GPS locate button */
+  /* GPS locate button - positioned above panel */
   .locate-btn {
-    position: fixed; bottom: 260px; right: 12px; z-index: 999;
+    position: fixed; 
+    bottom: calc(40vh + 16px); /* 16px above half-height panel */
+    right: 12px; z-index: 999;
     width: 44px; height: 44px; border-radius: 50%;
     background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     border: 1px solid var(--glass-border);
     color: var(--text); font-size: 20px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .locate-btn.tracking { color: var(--ocean-light); border-color: var(--ocean-light); }
+  
+  /* Adjust GPS button position based on panel state */
+  .bottom-panel.collapsed ~ .locate-btn { bottom: 80px; }
+  .bottom-panel.full ~ .locate-btn { bottom: calc(85vh + 16px); }
 
   /* Map legend */
   .map-legend {
@@ -287,8 +354,6 @@
   <button class="layer-btn" id="btn-satellite" onclick="toggleSatellite()" title="Satellite View">🛰️</button>
 </div>
 
-<button class="locate-btn" id="locate-btn" onclick="toggleGPS()">📍</button>
-
 <div class="map-legend" id="map-legend">
   <div class="legend-title">Map Legend</div>
   <div class="legend-item"><div class="legend-line" style="background:#e2e8f0"></div> Roads</div>
@@ -302,15 +367,61 @@
 <div id="map"></div>
 
 <div class="bottom-panel" id="bottom-panel">
-  <div class="panel-tabs">
-    <button class="panel-tab active" onclick="showPanel('navigate')"><span class="tab-icon">🧭</span>Navigate</button>
-    <button class="panel-tab" onclick="showPanel('tides')"><span class="tab-icon">🌊</span>Tides</button>
-    <button class="panel-tab" onclick="showPanel('surf')"><span class="tab-icon">🏄</span>Surf</button>
-    <button class="panel-tab" onclick="showPanel('glowworm')"><span class="tab-icon">✨</span>Glow</button>
-    <button class="panel-tab" onclick="showPanel('fish')"><span class="tab-icon">🎣</span>Fish</button>
-    <button class="panel-tab" onclick="showPanel('wildlife')"><span class="tab-icon">🐢</span>Life</button>
-    <button class="panel-tab" onclick="showPanel('wind')"><span class="tab-icon">💨</span>Wind</button>
+  <!-- Drag handle for expansion -->
+  <div class="panel-handle" id="panel-handle">
+    <div class="handle-bar"></div>
   </div>
+
+  <!-- Category tabs: Map, Conditions, Guide -->
+  <div class="category-tabs">
+    <button class="category-tab active" onclick="showCategory('map')">
+      <span class="cat-icon">🗺️</span>
+      <span>Map</span>
+    </button>
+    <button class="category-tab" onclick="showCategory('conditions')">
+      <span class="cat-icon">🌊</span>
+      <span>Conditions</span>
+    </button>
+    <button class="category-tab" onclick="showCategory('guide')">
+      <span class="cat-icon">📚</span>
+      <span>Guide</span>
+    </button>
+  </div>
+
+  <!-- Sub-tabs for Map category -->
+  <div class="sub-tabs active" id="subtabs-map">
+    <button class="sub-tab active" onclick="showPanel('navigate')">
+      <span class="sub-icon">🧭</span>Navigate
+    </button>
+  </div>
+
+  <!-- Sub-tabs for Conditions category -->
+  <div class="sub-tabs" id="subtabs-conditions">
+    <button class="sub-tab active" onclick="showPanel('tides')">
+      <span class="sub-icon">🌊</span>Tides
+    </button>
+    <button class="sub-tab" onclick="showPanel('surf')">
+      <span class="sub-icon">🏄</span>Surf
+    </button>
+    <button class="sub-tab" onclick="showPanel('wind')">
+      <span class="sub-icon">💨</span>Wind
+    </button>
+  </div>
+
+  <!-- Sub-tabs for Guide category -->
+  <div class="sub-tabs" id="subtabs-guide">
+    <button class="sub-tab active" onclick="showPanel('fish')">
+      <span class="sub-icon">🎣</span>Fish
+    </button>
+    <button class="sub-tab" onclick="showPanel('wildlife')">
+      <span class="sub-icon">🐢</span>Wildlife
+    </button>
+    <button class="sub-tab" onclick="showPanel('glowworm')">
+      <span class="sub-icon">✨</span>Glow Worm
+    </button>
+  </div>
+
+  <!-- Content area -->
   <div class="panel-content">
     <div class="panel-section active" id="panel-navigate">
       <div class="drop-pin-bar">
@@ -327,6 +438,8 @@
     <div class="panel-section" id="panel-wind"><div id="wind-info">Loading wind data...</div></div>
   </div>
 </div>
+
+<button class="locate-btn" id="locate-btn" onclick="toggleGPS()">📍</button>
 
 <script>
 // ============ MAP SETUP ============
@@ -914,12 +1027,116 @@ function toggleSatellite() {
 document.getElementById('btn-satellite').classList.add('active');
 
 // ============ BOTTOM PANEL ============
-function showPanel(name) {
-  document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+// ============ PANEL EXPANSION STATE ============
+let panelState = 'half'; // 'collapsed', 'half', or 'full'
+let dragStartY = 0;
+let dragStartHeight = 0;
+
+function showCategory(category) {
+  // Update category tab active state
+  document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  
+  // Show the corresponding sub-tabs
+  document.querySelectorAll('.sub-tabs').forEach(st => st.classList.remove('active'));
+  document.getElementById('subtabs-' + category).classList.add('active');
+  
+  // Activate the first sub-tab's panel in this category
+  const firstSubTab = document.querySelector(`#subtabs-${category} .sub-tab`);
+  if (firstSubTab) {
+    // Map category panels
+    const categoryPanels = {
+      'map': ['navigate'],
+      'conditions': ['tides', 'surf', 'wind'],
+      'guide': ['fish', 'wildlife', 'glowworm']
+    };
+    
+    const panels = categoryPanels[category];
+    if (panels && panels.length > 0) {
+      // Reset all sub-tabs in this category
+      document.querySelectorAll(`#subtabs-${category} .sub-tab`).forEach(st => st.classList.remove('active'));
+      firstSubTab.classList.add('active');
+      
+      // Show the first panel
+      document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+      document.getElementById('panel-' + panels[0]).classList.add('active');
+    }
+  }
+}
+
+function showPanel(name) {
+  // Update sub-tab active state
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  
+  // Show the corresponding panel section
+  document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
 }
+
+function setPanelState(state) {
+  const panel = document.getElementById('bottom-panel');
+  panel.classList.remove('collapsed', 'full');
+  if (state === 'collapsed') panel.classList.add('collapsed');
+  else if (state === 'full') panel.classList.add('full');
+  panelState = state;
+}
+
+// Touch drag handling for panel expansion
+document.addEventListener('DOMContentLoaded', () => {
+  const handle = document.getElementById('panel-handle');
+  const panel = document.getElementById('bottom-panel');
+  
+  let startY = 0;
+  let currentHeight = 0;
+  
+  handle.addEventListener('touchstart', (e) => {
+    startY = e.touches[0].clientY;
+    const rect = panel.getBoundingClientRect();
+    currentHeight = window.innerHeight - rect.top;
+  }, { passive: true });
+  
+  handle.addEventListener('touchmove', (e) => {
+    const deltaY = startY - e.touches[0].clientY;
+    const newHeight = currentHeight + deltaY;
+    
+    // Constrain between collapsed and full
+    const minHeight = 64;
+    const maxHeight = window.innerHeight * 0.85;
+    
+    if (newHeight >= minHeight && newHeight <= maxHeight) {
+      panel.style.height = newHeight + 'px';
+    }
+  }, { passive: true });
+  
+  handle.addEventListener('touchend', (e) => {
+    const rect = panel.getBoundingClientRect();
+    const finalHeight = window.innerHeight - rect.top;
+    
+    // Snap to nearest state
+    const vh40 = window.innerHeight * 0.40;
+    const vh85 = window.innerHeight * 0.85;
+    
+    if (finalHeight < vh40 * 0.6) {
+      setPanelState('collapsed');
+    } else if (finalHeight > vh40 * 1.4) {
+      setPanelState('full');
+    } else {
+      setPanelState('half');
+    }
+  }, { passive: true });
+  
+  // Double-tap handle to toggle between half and full
+  let lastTap = 0;
+  handle.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      if (panelState === 'half') setPanelState('full');
+      else setPanelState('half');
+    }
+    lastTap = now;
+  });
+});
 
 // ============ WEATHER ============
 async function loadWeather() {
